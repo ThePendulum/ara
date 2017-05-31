@@ -18,7 +18,7 @@ func main() {
 
 	for b := 0; b >= 0; b++ {
 		for i := 0; i < config.Length; i++ {
-			color := Hsv(float64(i*360/config.Length)+float64(b), 1.0, 1.0)
+			color := Hsv(30.0, 0.5, 1.0)
 
 			ws2811.SetLed(i, color)
 		}
