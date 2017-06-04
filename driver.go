@@ -9,7 +9,7 @@ import (
 	"ara/color"
 )
 
-func driver(logger *syslog.Writer, fb chan string) {
+func driver(logger *syslog.Writer, fb chan string, hsv *color.Hsv) {
 	if err := ws2811.Init(18, 300, 255); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
