@@ -2,14 +2,19 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
-
 	yaml "gopkg.in/yaml.v2"
+	"log"
 )
 
 type Config struct {
-	Length int
-	Fps    int
+	Length	int
+	Fps	int
+	Server
+}
+
+type Server struct {
+	Host	string
+	Port	int
 }
 
 func readConfigFile() []byte {

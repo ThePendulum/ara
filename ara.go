@@ -1,81 +1,46 @@
 package main
 
 import (
-	"fmt"
-	"math"
-	"os"
-	"rpi_ws281x/golang/ws2811"
-	"time"
+	"log/syslog"
+	"log"
+	"ara/color"
+	"flag"
 )
 
 var config Config = getConfig()
 
 func main() {
-	if err := ws2811.Init(18, 300, 255); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	logger, err := syslog.New(syslog.LOG_ERR, "ara")
+	logger.Info("Starting Ara...")
+
+	if err != nil {
+		log.Fatal("Error writing syslog!")
 	}
 
-	for b := 0; b >= 0; b++ {
-		for i := 0; i < config.Length; i++ {
-			color := Hsv(30.0, 0.5, 1.0)
+	hue := flag.String("hue", "0", "Hue channel")
+	saturation := flag.String("saturation", "1", "Saturation channel")
+	value := flag.String("value", "1", "Value channel")
 
-			ws2811.SetLed(i, color)
-		}
+	flag.Parse()
 
-		ws2811.Render()
+	hsv := color.Hsv{}
 
-		time.Sleep(time.Second / time.Duration(config.Fps))
-	}
-}
-
-func Color(red uint32, green uint32, blue uint32) uint32 {
-	var rgb uint32
-
-	rgb = green
-	rgb = (rgb << 8) + red
-	rgb = (rgb << 8) + blue
-
-	return rgb
-}
-
-func Hsv(hue float64, saturation float64, value float64) uint32 {
-	var red, green, blue float64
-
-	hue = math.Mod(hue, 360) / 360
-
-	i := math.Floor(hue * 6)
-	f := hue*6.0 - i
-	p := value * (1 - saturation)
-	q := value * (1 - f*saturation)
-	t := value * (1 - (1-f)*saturation)
-
-	switch int(i) % 6 {
-	case 0:
-		red = value
-		green = t
-		blue = p
-	case 1:
-		red = q
-		green = value
-		blue = p
-	case 2:
-		red = p
-		green = value
-		blue = t
-	case 3:
-		red = p
-		green = q
-		blue = value
-	case 4:
-		red = t
-		green = p
-		blue = value
-	case 5:
-		red = value
-		green = p
-		blue = q
+	if hueFn, err := compile(*hue); err == nil {
+		hsv.Hue = hueFn
 	}
 
-	return Color(uint32(red*255), uint32(green*255), uint32(blue*255))
+	if saturationFn, err := compile(*saturation); err == nil {
+		hsv.Saturation = saturationFn
+	}
+
+	if valueFn, err := compile(*value); err == nil {
+		hsv.Value = valueFn
+	}
+
+	go driver(logger, &hsv)
+	go server(logger, &hsv)
+
+	logger.Info("Ara is up and running!")
+
+	initShell(logger, &hsv)
 }
